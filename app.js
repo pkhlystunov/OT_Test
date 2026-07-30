@@ -194,7 +194,7 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  ЗАВЕРШЕНИЕ ТЕСТА (ВМЕСТО PDF – ПЕЧАТЬ)
+    //  ЗАВЕРШЕНИЕ ТЕСТА – показываем результаты и кнопку «Сохранить как PDF»
     // -------------------------------------------------------------
     function finishTest() {
         if (testFinished) return;
@@ -266,9 +266,6 @@
 
         const radios = questionsArea.querySelectorAll('input[type="radio"]');
         radios.forEach(r => r.disabled = true);
-
-        // Добавляем класс для печати (чтобы скрыть лишнее)
-        document.body.classList.add('print-mode');
     }
 
     // -------------------------------------------------------------
