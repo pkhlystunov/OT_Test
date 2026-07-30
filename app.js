@@ -1,10 +1,10 @@
 // ================================================================
-//  Основное приложение – логика тестирования, генерация PDF через pdfmake
+//  Основное приложение – логика тестирования, генерация PDF
 // ================================================================
 
 (function() {
     // -------------------------------------------------------------
-    //  ФУНКЦИЯ ГЕНЕРАЦИИ 40+ ВОПРОСОВ НА ОСНОВЕ БАЗОВЫХ
+    //  ГЕНЕРАЦИЯ 40+ ВОПРОСОВ НА ОСНОВЕ БАЗОВЫХ
     // -------------------------------------------------------------
     function generateFullQuestions(topicKey) {
         if (!baseQuestions[topicKey]) return [];
@@ -194,79 +194,100 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  ГЕНЕРАЦИЯ PDF С ПОМОЩЬЮ pdfmake (ГАРАНТИРОВАННО РАБОТАЕТ)
+    //  ГЕНЕРАЦИЯ PDF (html2canvas + jsPDF) – СТАБИЛЬНАЯ ВЕРСИЯ
     // -------------------------------------------------------------
     function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
         const date = new Date().toLocaleDateString('ru-RU');
         const percent = Math.round((correctCount / total) * 100);
 
-        // Подготовка данных для таблицы
-        const tableBody = results.map((r, idx) => {
+        // Создаём скрытый контейнер для рендеринга
+        const container = document.createElement('div');
+        container.style.cssText = `
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 210mm;
+            padding: 20px;
+            background: white;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            z-index: -1000;
+            opacity: 0;
+            pointer-events: none;
+        `;
+        document.body.appendChild(container);
+
+        // Собираем HTML-содержимое
+        let html = `
+            <h1 style="text-align:center; font-size:24px; margin-bottom:5px;">ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ</h1>
+            <p style="text-align:center; font-size:16px; margin-bottom:15px;">по охране труда (строительная компания)</p>
+            <p><strong>Тема:</strong> ${topicLabel}</p>
+            <p><strong>ФИО работника:</strong> ${fio}</p>
+            <p><strong>Должность:</strong> ${position}</p>
+            <p><strong>Дата тестирования:</strong> ${date}</p>
+            <p style="font-size:18px; font-weight:bold; color:${passed ? 'green' : 'red'}; text-align:center; margin:15px 0;">
+                РЕЗУЛЬТАТ: ${correctCount} из ${total} правильных (${percent}%) — ${passed ? 'ЗАЧТЕНО' : 'НЕ ЗАЧТЕНО'}
+            </p>
+            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                <thead>
+                    <tr style="background-color:#1a3e60; color:white;">
+                        <th style="padding:6px; border:1px solid #ddd; text-align:center;">№</th>
+                        <th style="padding:6px; border:1px solid #ddd; text-align:left;">Вопрос</th>
+                        <th style="padding:6px; border:1px solid #ddd; text-align:left;">Ваш ответ</th>
+                        <th style="padding:6px; border:1px solid #ddd; text-align:left;">Правильный ответ</th>
+                        <th style="padding:6px; border:1px solid #ddd; text-align:center;">Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        results.forEach((r, idx) => {
             const userText = (r.userIndex !== -1) ? r.options[r.userIndex] : 'Не выбран';
             const correctText = r.options[r.correctIndex];
             const status = r.isCorrect ? 'Верно' : 'Неверно';
-            return [
-                { text: (idx+1).toString(), alignment: 'center' },
-                { text: r.question, alignment: 'left' },
-                { text: userText, alignment: 'left' },
-                { text: correctText, alignment: 'left' },
-                { text: status, alignment: 'center', color: r.isCorrect ? 'green' : 'red' }
-            ];
+            const color = r.isCorrect ? 'green' : 'red';
+            const bg = idx % 2 === 0 ? '#f9f9f9' : 'white';
+            html += `
+                <tr style="background-color:${bg};">
+                    <td style="padding:4px; border:1px solid #ddd; text-align:center;">${idx+1}</td>
+                    <td style="padding:4px; border:1px solid #ddd; text-align:left;">${r.question}</td>
+                    <td style="padding:4px; border:1px solid #ddd; text-align:left;">${userText}</td>
+                    <td style="padding:4px; border:1px solid #ddd; text-align:left;">${correctText}</td>
+                    <td style="padding:4px; border:1px solid #ddd; text-align:center; color:${color}; font-weight:bold;">${status}</td>
+                </tr>
+            `;
         });
+        html += `
+                </tbody>
+            </table>
+            <p style="margin-top:30px;">Подпись работника: _________________</p>
+            <p>Подпись ответственного лица: _________________</p>
+        `;
+        container.innerHTML = html;
 
-        const docDefinition = {
-            content: [
-                { text: 'ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ', style: 'header', alignment: 'center' },
-                { text: 'по охране труда (строительная компания)', style: 'subheader', alignment: 'center', margin: [0, 0, 0, 15] },
-                { text: `Тема: ${topicLabel}`, style: 'info' },
-                { text: `ФИО работника: ${fio}`, style: 'info' },
-                { text: `Должность: ${position}`, style: 'info' },
-                { text: `Дата тестирования: ${date}`, style: 'info', margin: [0, 0, 0, 10] },
-                { 
-                    text: `РЕЗУЛЬТАТ: ${correctCount} из ${total} правильных (${percent}%) — ${passed ? 'ЗАЧТЕНО' : 'НЕ ЗАЧТЕНО'}`,
-                    style: 'result',
-                    alignment: 'center',
-                    margin: [0, 0, 0, 12]
-                },
-                {
-                    table: {
-                        headerRows: 1,
-                        widths: [25, '*', 100, 100, 55],
-                        body: [
-                            [
-                                { text: '№', style: 'tableHeader', alignment: 'center' },
-                                { text: 'Вопрос', style: 'tableHeader', alignment: 'left' },
-                                { text: 'Ваш ответ', style: 'tableHeader', alignment: 'left' },
-                                { text: 'Правильный ответ', style: 'tableHeader', alignment: 'left' },
-                                { text: 'Статус', style: 'tableHeader', alignment: 'center' }
-                            ],
-                            ...tableBody
-                        ]
-                    },
-                    layout: {
-                        fillColor: function(rowIndex) {
-                            return (rowIndex % 2 === 0) ? '#F3F5F8' : null;
-                        }
-                    }
-                },
-                { text: `\nПодпись работника: _________________`, style: 'signature', margin: [0, 20, 0, 0] },
-                { text: `Подпись ответственного лица: _________________`, style: 'signature' }
-            ],
-            styles: {
-                header: { fontSize: 18, bold: true, margin: [0, 0, 0, 4] },
-                subheader: { fontSize: 14, bold: false, margin: [0, 0, 0, 10] },
-                info: { fontSize: 12, bold: false, margin: [0, 0, 0, 2] },
-                result: { fontSize: 14, bold: true, color: passed ? '#1e7e34' : '#b13e3e' },
-                tableHeader: { bold: true, fontSize: 11, fillColor: '#1a3e60', color: 'white' },
-                signature: { fontSize: 12, bold: false, margin: [0, 2, 0, 0] }
-            },
-            defaultStyle: {
-                font: 'Roboto'
-            }
-        };
-
-        // Скачиваем PDF
-        pdfmake.createPdf(docDefinition).download(`Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`);
+        // Даём время на отрисовку
+        setTimeout(() => {
+            html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                width: 210 * 2.83,
+                height: 297 * 2.83
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                const fileName = `Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`;
+                pdf.save(fileName);
+                document.body.removeChild(container);
+            }).catch(err => {
+                console.error('Ошибка генерации PDF:', err);
+                alert('Не удалось создать PDF. Попробуйте ещё раз.');
+                document.body.removeChild(container);
+            });
+        }, 1000);
     }
 
     // -------------------------------------------------------------
@@ -343,7 +364,7 @@
         const radios = questionsArea.querySelectorAll('input[type="radio"]');
         radios.forEach(r => r.disabled = true);
 
-        // Генерируем PDF через pdfmake
+        // Генерируем PDF
         generatePDF(fio, position, topicMeta[currentTopicKey], results, correctCount, total, passed);
     }
 
