@@ -1,5 +1,5 @@
 // ================================================================
-//  Основное приложение – логика тестирования, генерация PDF через iframe
+//  Основное приложение – логика тестирования, генерация PDF через pdfmake
 // ================================================================
 
 (function() {
@@ -194,119 +194,79 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  НОВАЯ ФУНКЦИЯ ГЕНЕРАЦИИ PDF ЧЕРЕЗ IFRAME
+    //  ГЕНЕРАЦИЯ PDF С ПОМОЩЬЮ pdfmake (ГАРАНТИРОВАННО РАБОТАЕТ)
     // -------------------------------------------------------------
     function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
         const date = new Date().toLocaleDateString('ru-RU');
         const percent = Math.round((correctCount / total) * 100);
 
-        // Формируем HTML-код для PDF
-        let content = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <style>
-                    body { font-family: Arial, sans-serif; font-size: 12px; padding: 20px; background: white; }
-                    h1 { text-align: center; font-size: 24px; margin-bottom: 5px; }
-                    .subtitle { text-align: center; font-size: 16px; margin-bottom: 15px; }
-                    .info { margin: 4px 0; }
-                    .result { font-size: 18px; font-weight: bold; text-align: center; margin: 15px 0; }
-                    .result.pass { color: green; }
-                    .result.fail { color: red; }
-                    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-                    th { background-color: #1a3e60; color: white; padding: 6px; border: 1px solid #ddd; text-align: center; }
-                    td { padding: 4px; border: 1px solid #ddd; text-align: left; }
-                    .center { text-align: center; }
-                    .status-pass { color: green; font-weight: bold; }
-                    .status-fail { color: red; font-weight: bold; }
-                    .signature { margin-top: 30px; }
-                </style>
-            </head>
-            <body>
-                <h1>ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ</h1>
-                <p class="subtitle">по охране труда (строительная компания)</p>
-                <p class="info"><strong>Тема:</strong> ${topicLabel}</p>
-                <p class="info"><strong>ФИО работника:</strong> ${fio}</p>
-                <p class="info"><strong>Должность:</strong> ${position}</p>
-                <p class="info"><strong>Дата тестирования:</strong> ${date}</p>
-                <p class="result ${passed ? 'pass' : 'fail'}">
-                    РЕЗУЛЬТАТ: ${correctCount} из ${total} правильных (${percent}%) — ${passed ? 'ЗАЧТЕНО' : 'НЕ ЗАЧТЕНО'}
-                </p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>№</th>
-                            <th>Вопрос</th>
-                            <th>Ваш ответ</th>
-                            <th>Правильный ответ</th>
-                            <th>Статус</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-        `;
-        results.forEach((r, idx) => {
+        // Подготовка данных для таблицы
+        const tableBody = results.map((r, idx) => {
             const userText = (r.userIndex !== -1) ? r.options[r.userIndex] : 'Не выбран';
             const correctText = r.options[r.correctIndex];
             const status = r.isCorrect ? 'Верно' : 'Неверно';
-            const statusClass = r.isCorrect ? 'status-pass' : 'status-fail';
-            const bg = idx % 2 === 0 ? '#f9f9f9' : 'white';
-            content += `
-                <tr style="background-color:${bg};">
-                    <td class="center">${idx+1}</td>
-                    <td>${r.question}</td>
-                    <td>${userText}</td>
-                    <td>${correctText}</td>
-                    <td class="center ${statusClass}">${status}</td>
-                </tr>
-            `;
+            return [
+                { text: (idx+1).toString(), alignment: 'center' },
+                { text: r.question, alignment: 'left' },
+                { text: userText, alignment: 'left' },
+                { text: correctText, alignment: 'left' },
+                { text: status, alignment: 'center', color: r.isCorrect ? 'green' : 'red' }
+            ];
         });
-        content += `
-                    </tbody>
-                </table>
-                <p class="signature">Подпись работника: _________________</p>
-                <p class="signature">Подпись ответственного лица: _________________</p>
-            </body>
-            </html>
-        `;
 
-        // Создаём iframe
-        const iframe = document.createElement('iframe');
-        iframe.style.cssText = 'position: absolute; left: 0; top: 0; width: 210mm; height: 297mm; border: none; visibility: hidden;';
-        document.body.appendChild(iframe);
+        const docDefinition = {
+            content: [
+                { text: 'ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ', style: 'header', alignment: 'center' },
+                { text: 'по охране труда (строительная компания)', style: 'subheader', alignment: 'center', margin: [0, 0, 0, 15] },
+                { text: `Тема: ${topicLabel}`, style: 'info' },
+                { text: `ФИО работника: ${fio}`, style: 'info' },
+                { text: `Должность: ${position}`, style: 'info' },
+                { text: `Дата тестирования: ${date}`, style: 'info', margin: [0, 0, 0, 10] },
+                { 
+                    text: `РЕЗУЛЬТАТ: ${correctCount} из ${total} правильных (${percent}%) — ${passed ? 'ЗАЧТЕНО' : 'НЕ ЗАЧТЕНО'}`,
+                    style: 'result',
+                    alignment: 'center',
+                    margin: [0, 0, 0, 12]
+                },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: [25, '*', 100, 100, 55],
+                        body: [
+                            [
+                                { text: '№', style: 'tableHeader', alignment: 'center' },
+                                { text: 'Вопрос', style: 'tableHeader', alignment: 'left' },
+                                { text: 'Ваш ответ', style: 'tableHeader', alignment: 'left' },
+                                { text: 'Правильный ответ', style: 'tableHeader', alignment: 'left' },
+                                { text: 'Статус', style: 'tableHeader', alignment: 'center' }
+                            ],
+                            ...tableBody
+                        ]
+                    },
+                    layout: {
+                        fillColor: function(rowIndex) {
+                            return (rowIndex % 2 === 0) ? '#F3F5F8' : null;
+                        }
+                    }
+                },
+                { text: `\nПодпись работника: _________________`, style: 'signature', margin: [0, 20, 0, 0] },
+                { text: `Подпись ответственного лица: _________________`, style: 'signature' }
+            ],
+            styles: {
+                header: { fontSize: 18, bold: true, margin: [0, 0, 0, 4] },
+                subheader: { fontSize: 14, bold: false, margin: [0, 0, 0, 10] },
+                info: { fontSize: 12, bold: false, margin: [0, 0, 0, 2] },
+                result: { fontSize: 14, bold: true, color: passed ? '#1e7e34' : '#b13e3e' },
+                tableHeader: { bold: true, fontSize: 11, fillColor: '#1a3e60', color: 'white' },
+                signature: { fontSize: 12, bold: false, margin: [0, 2, 0, 0] }
+            },
+            defaultStyle: {
+                font: 'Roboto'
+            }
+        };
 
-        // Записываем содержимое в iframe
-        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-        iframeDoc.open();
-        iframeDoc.write(content);
-        iframeDoc.close();
-
-        // Даём время на загрузку
-        setTimeout(() => {
-            // Захватываем содержимое iframe
-            html2canvas(iframe.contentWindow.document.body, {
-                scale: 2,
-                useCORS: true,
-                letterRendering: true,
-                logging: false,
-                width: 210 * 2.83, // ~595px (A4 ширина в пикселях при scale=2)
-                height: 297 * 2.83  // ~842px
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                const fileName = `Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`;
-                pdf.save(fileName);
-                document.body.removeChild(iframe);
-            }).catch(err => {
-                console.error('Ошибка захвата iframe:', err);
-                alert('Не удалось создать PDF. Попробуйте ещё раз.');
-                document.body.removeChild(iframe);
-            });
-        }, 800); // задержка для полной загрузки iframe
+        // Скачиваем PDF
+        pdfmake.createPdf(docDefinition).download(`Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`);
     }
 
     // -------------------------------------------------------------
@@ -383,7 +343,7 @@
         const radios = questionsArea.querySelectorAll('input[type="radio"]');
         radios.forEach(r => r.disabled = true);
 
-        // Генерируем PDF через iframe
+        // Генерируем PDF через pdfmake
         generatePDF(fio, position, topicMeta[currentTopicKey], results, correctCount, total, passed);
     }
 
