@@ -1,5 +1,5 @@
 // ================================================================
-//  Основное приложение – логика тестирования, сохранение PDF через печать
+//  Основное приложение – логика тестирования, генерация PDF через pdfmake
 // ================================================================
 
 (function() {
@@ -194,7 +194,83 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  ЗАВЕРШЕНИЕ ТЕСТА – показываем результаты и кнопку «Сохранить как PDF»
+    //  ГЕНЕРАЦИЯ PDF С ПОМОЩЬЮ pdfmake
+    // -------------------------------------------------------------
+    function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
+        const date = new Date().toLocaleDateString('ru-RU');
+        const percent = Math.round((correctCount / total) * 100);
+
+        // Формируем таблицу
+        const tableBody = results.map((r, idx) => {
+            const userText = (r.userIndex !== -1) ? r.options[r.userIndex] : 'Не выбран';
+            const correctText = r.options[r.correctIndex];
+            const status = r.isCorrect ? 'Верно' : 'Неверно';
+            return [
+                { text: (idx+1).toString(), alignment: 'center' },
+                { text: r.question, alignment: 'left' },
+                { text: userText, alignment: 'left' },
+                { text: correctText, alignment: 'left' },
+                { text: status, alignment: 'center', color: r.isCorrect ? '#1e7e34' : '#b13e3e' }
+            ];
+        });
+
+        const docDefinition = {
+            content: [
+                { text: 'ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ', style: 'header', alignment: 'center' },
+                { text: 'по охране труда (строительная компания)', style: 'subheader', alignment: 'center', margin: [0, 0, 0, 15] },
+                { text: `Тема: ${topicLabel}`, style: 'info' },
+                { text: `ФИО работника: ${fio}`, style: 'info' },
+                { text: `Должность: ${position}`, style: 'info' },
+                { text: `Дата тестирования: ${date}`, style: 'info', margin: [0, 0, 0, 10] },
+                { 
+                    text: `РЕЗУЛЬТАТ: ${correctCount} из ${total} правильных (${percent}%) — ${passed ? 'ЗАЧТЕНО' : 'НЕ ЗАЧТЕНО'}`,
+                    style: 'result',
+                    alignment: 'center',
+                    margin: [0, 0, 0, 12]
+                },
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: [25, '*', 100, 100, 55],
+                        body: [
+                            [
+                                { text: '№', style: 'tableHeader', alignment: 'center' },
+                                { text: 'Вопрос', style: 'tableHeader', alignment: 'left' },
+                                { text: 'Ваш ответ', style: 'tableHeader', alignment: 'left' },
+                                { text: 'Правильный ответ', style: 'tableHeader', alignment: 'left' },
+                                { text: 'Статус', style: 'tableHeader', alignment: 'center' }
+                            ],
+                            ...tableBody
+                        ]
+                    },
+                    layout: {
+                        fillColor: function(rowIndex) {
+                            return (rowIndex % 2 === 0) ? '#F3F5F8' : null;
+                        }
+                    }
+                },
+                { text: `\nПодпись работника: _________________`, style: 'signature', margin: [0, 20, 0, 0] },
+                { text: `Подпись ответственного лица: _________________`, style: 'signature' }
+            ],
+            styles: {
+                header: { fontSize: 18, bold: true, margin: [0, 0, 0, 4] },
+                subheader: { fontSize: 14, bold: false, margin: [0, 0, 0, 10] },
+                info: { fontSize: 12, bold: false, margin: [0, 0, 0, 2] },
+                result: { fontSize: 14, bold: true, color: passed ? '#1e7e34' : '#b13e3e' },
+                tableHeader: { bold: true, fontSize: 11, fillColor: '#1a3e60', color: 'white' },
+                signature: { fontSize: 12, bold: false, margin: [0, 2, 0, 0] }
+            },
+            defaultStyle: {
+                font: 'Roboto' // используем встроенный шрифт Roboto из vfs_fonts
+            }
+        };
+
+        // Скачиваем PDF
+        pdfmake.createPdf(docDefinition).download(`Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`);
+    }
+
+    // -------------------------------------------------------------
+    //  ЗАВЕРШЕНИЕ ТЕСТА
     // -------------------------------------------------------------
     function finishTest() {
         if (testFinished) return;
@@ -257,8 +333,8 @@
         });
         resultHtml += `</div>`;
         resultHtml += `<div style="margin-top:15px;">
-            <button class="btn print-btn" onclick="window.print()">🖨️ Сохранить как PDF</button>
-            <span style="margin-left:15px; color:#1a6b3b;">Нажмите кнопку, затем выберите «Сохранить как PDF» в диалоге печати.</span>
+            <button class="btn print-btn" onclick="window.print()">🖨️ Печать</button>
+            <span style="margin-left:15px; color:#1a6b3b;">PDF автоматически скачан</span>
         </div>`;
 
         resultArea.innerHTML = resultHtml;
@@ -266,6 +342,9 @@
 
         const radios = questionsArea.querySelectorAll('input[type="radio"]');
         radios.forEach(r => r.disabled = true);
+
+        // Генерация PDF через pdfmake
+        generatePDF(fio, position, topicMeta[currentTopicKey], results, correctCount, total, passed);
     }
 
     // -------------------------------------------------------------
