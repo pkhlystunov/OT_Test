@@ -179,3 +179,12 @@ h1 {
         break-inside: avoid;
     }
 }
+/* Добавьте в конец, если нужно скрыть лишнее при печати */
+@media print {
+    .controls, .person-fields, #questionsArea, #finishArea, .btn, .print-btn {
+        display: none !important;
+    }
+    #resultArea {
+        display: block !important;
+    }
+}
