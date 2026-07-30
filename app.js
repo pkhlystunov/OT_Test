@@ -1,6 +1,6 @@
 // ================================================================
-//  Основное приложение – логика тестирования, генерация PDF, управление UI.
-//  Не требует редактирования для изменения вопросов – всё берётся из questions.js.
+//  Основное приложение – логика тестирования, управление UI,
+//  генерация PDF через печать (надёжно, без внешних библиотек).
 // ================================================================
 
 (function() {
@@ -199,61 +199,10 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  PDF GENERATION (pdfmake)
+    //  ФУНКЦИЯ ПЕЧАТИ / СОХРАНЕНИЯ В PDF (через браузер)
     // -------------------------------------------------------------
-    function generatePDF(results, correctCount, total, passed, fio, position, topicLabel) {
-        const date = new Date().toLocaleDateString('ru-RU');
-        const percent = Math.round((correctCount / total) * 100);
-
-        const tableBody = results.map((r, idx) => {
-            const userText = (r.userIndex !== -1) ? r.options[r.userIndex] : 'Не выбран';
-            const correctText = r.options[r.correctIndex];
-            const status = r.isCorrect ? 'Верно' : 'Неверно';
-            return [
-                { text: (idx+1).toString(), alignment: 'center' },
-                { text: r.question, alignment: 'left' },
-                { text: userText, alignment: 'left' },
-                { text: correctText, alignment: 'left' },
-                { text: status, alignment: 'center' }
-            ];
-        });
-
-        const docDefinition = {
-            content: [
-                { text: 'Лист прохождения тестирования по охране труда', style: 'header', alignment: 'center' },
-                { text: `Тема: ${topicLabel}`, style: 'subheader', margin: [0, 10, 0, 5] },
-                { text: `ФИО работника: ${fio}`, style: 'subheader', margin: [0, 0, 0, 5] },
-                { text: `Должность: ${position}`, style: 'subheader', margin: [0, 0, 0, 5] },
-                { text: `Дата тестирования: ${date}`, style: 'subheader', margin: [0, 0, 0, 10] },
-                { text: `Результат: ${correctCount} из ${total} правильных (${percent}%) — ${passed ? 'ЗАЧТЕНО' : 'НЕ ЗАЧТЕНО'}`, style: 'result', margin: [0, 0, 0, 10] },
-                {
-                    table: {
-                        headerRows: 1,
-                        widths: [30, '*', 100, 100, 60],
-                        body: [
-                            [
-                                { text: '№', style: 'tableHeader', alignment: 'center' },
-                                { text: 'Вопрос', style: 'tableHeader', alignment: 'left' },
-                                { text: 'Ваш ответ', style: 'tableHeader', alignment: 'left' },
-                                { text: 'Правильный ответ', style: 'tableHeader', alignment: 'left' },
-                                { text: 'Статус', style: 'tableHeader', alignment: 'center' }
-                            ],
-                            ...tableBody
-                        ]
-                    },
-                    layout: { fillColor: (rowIndex) => (rowIndex % 2 === 0) ? '#F3F5F8' : null }
-                }
-            ],
-            styles: {
-                header: { fontSize: 18, bold: true, margin: [0, 0, 0, 10] },
-                subheader: { fontSize: 12, bold: false },
-                result: { fontSize: 14, bold: true, color: passed ? '#1e7e34' : '#b13e3e' },
-                tableHeader: { bold: true, fontSize: 11, fillColor: '#1a3e60', color: 'white' }
-            },
-            defaultStyle: { font: 'Roboto' }
-        };
-
-        pdfmake.createPdf(docDefinition).download(`Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`);
+    function printOrSavePDF() {
+        window.print();
     }
 
     // -------------------------------------------------------------
@@ -319,9 +268,10 @@
             </div>`;
         });
         resultHtml += `</div>`;
+        // Кнопка печати и сообщение о сохранении PDF
         resultHtml += `<div style="margin-top:15px;">
-            <button class="btn print-btn" onclick="window.print()">🖨️ Печать</button>
-            <span style="margin-left:15px; color:#1a6b3b;">PDF автоматически скачан</span>
+            <button class="btn print-btn" onclick="window.print()">🖨️ Печать / Сохранить как PDF</button>
+            <span style="margin-left:15px; color:#1a6b3b;">Для сохранения в PDF выберите "Сохранить как PDF" в диалоге печати.</span>
         </div>`;
 
         resultArea.innerHTML = resultHtml;
@@ -330,7 +280,10 @@
         const radios = questionsArea.querySelectorAll('input[type="radio"]');
         radios.forEach(r => r.disabled = true);
 
-        generatePDF(results, correctCount, total, passed, fio, position, topicMeta[currentTopicKey]);
+        // Автоматически открываем диалог печати, чтобы сразу сохранить PDF
+        setTimeout(() => {
+            window.print();
+        }, 300);
     }
 
     // -------------------------------------------------------------
