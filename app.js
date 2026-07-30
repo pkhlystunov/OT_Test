@@ -1,5 +1,5 @@
 // ================================================================
-//  Основное приложение – логика тестирования, генерация PDF через pdfmake
+//  Основное приложение – логика тестирования, автоматическая генерация PDF (pdfmake)
 // ================================================================
 
 (function() {
@@ -194,13 +194,19 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  ГЕНЕРАЦИЯ PDF С ПОМОЩЬЮ pdfmake
+    //  ГЕНЕРАЦИЯ PDF С ПОМОЩЬЮ pdfmake (АВТОМАТИЧЕСКИ)
     // -------------------------------------------------------------
     function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
+        // Проверка загрузки pdfmake
+        if (typeof pdfmake === 'undefined') {
+            alert('Библиотека pdfmake не загружена. Проверьте подключение скриптов.');
+            return;
+        }
+
         const date = new Date().toLocaleDateString('ru-RU');
         const percent = Math.round((correctCount / total) * 100);
 
-        // Формируем таблицу
+        // Подготовка таблицы
         const tableBody = results.map((r, idx) => {
             const userText = (r.userIndex !== -1) ? r.options[r.userIndex] : 'Не выбран';
             const correctText = r.options[r.correctIndex];
@@ -261,7 +267,7 @@
                 signature: { fontSize: 12, bold: false, margin: [0, 2, 0, 0] }
             },
             defaultStyle: {
-                font: 'Roboto' // используем встроенный шрифт Roboto из vfs_fonts
+                font: 'Roboto'  // шрифт, поддерживающий кириллицу (загружается из vfs_fonts)
             }
         };
 
@@ -343,7 +349,7 @@
         const radios = questionsArea.querySelectorAll('input[type="radio"]');
         radios.forEach(r => r.disabled = true);
 
-        // Генерация PDF через pdfmake
+        // Автоматически генерируем PDF
         generatePDF(fio, position, topicMeta[currentTopicKey], results, correctCount, total, passed);
     }
 
