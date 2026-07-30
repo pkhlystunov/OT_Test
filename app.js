@@ -193,30 +193,39 @@
     fioInput.addEventListener('input', checkCompletion);
     positionInput.addEventListener('input', checkCompletion);
 
-    // -------------------------------------------------------------
-    //  ГЕНЕРАЦИЯ PDF ЧЕРЕЗ html2pdf (АВТОМАТИЧЕСКИ)
+      // -------------------------------------------------------------
+    //  ГЕНЕРАЦИЯ PDF ЧЕРЕЗ html2canvas + jsPDF (вместо html2pdf)
     // -------------------------------------------------------------
     function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
-        // Проверка загрузки html2pdf
-        if (typeof html2pdf === 'undefined') {
-            alert('Библиотека html2pdf не загружена. Проверьте подключение скриптов или повторите попытку позже.');
+        // Проверка загрузки библиотек
+        if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+            // подгружаем jsPDF, если не загружен
+            if (typeof window.jspdf === 'undefined') {
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                document.head.appendChild(script);
+            }
+            alert('Библиотеки для PDF не загружены. Попробуйте ещё раз.');
             return;
         }
 
         const date = new Date().toLocaleDateString('ru-RU');
         const percent = Math.round((correctCount / total) * 100);
 
-        // Скрытый контейнер для рендеринга
+        // Создаём контейнер, который будет видим, но прозрачен (чтобы html2canvas мог захватить)
         const container = document.createElement('div');
         container.style.cssText = `
             position: absolute;
-            left: -9999px;
             top: 0;
+            left: 0;
             width: 210mm;
             padding: 20px;
             background: white;
             font-family: Arial, sans-serif;
             font-size: 12px;
+            opacity: 0;
+            pointer-events: none;
+            z-index: -1000;
         `;
         document.body.appendChild(container);
 
@@ -269,22 +278,29 @@
 
         // Даём время на отрисовку
         setTimeout(() => {
-            const opt = {
-                margin:        [10, 10, 10, 10],
-                filename:     `Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`,
-                image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
-
-            html2pdf().set(opt).from(container).save().then(() => {
+            // Используем html2canvas для захвата контейнера
+            html2canvas(container, {
+                scale: 2,
+                useCORS: true,
+                letterRendering: true,
+                width: container.scrollWidth,
+                height: container.scrollHeight
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = pdf.internal.pageSize.getHeight();
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                const fileName = `Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`;
+                pdf.save(fileName);
                 document.body.removeChild(container);
             }).catch(err => {
-                console.error('Ошибка генерации PDF:', err);
+                console.error('Ошибка захвата:', err);
                 alert('Не удалось создать PDF. Попробуйте ещё раз.');
                 document.body.removeChild(container);
             });
-        }, 1500);
+        }, 1000);
     }
 
     // -------------------------------------------------------------
