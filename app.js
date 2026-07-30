@@ -1,5 +1,5 @@
 // ================================================================
-//  Основное приложение – логика тестирования, генерация PDF через html2canvas + jsPDF
+//  Основное приложение – логика тестирования, сохранение PDF через печать
 // ================================================================
 
 (function() {
@@ -194,110 +194,7 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  ГЕНЕРАЦИЯ PDF (html2canvas + jsPDF) – НЕТ PDFMAKE!
-    // -------------------------------------------------------------
-    function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
-        const date = new Date().toLocaleDateString('ru-RU');
-        const percent = Math.round((correctCount / total) * 100);
-
-        // Проверка наличия библиотек
-        if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-            alert('Библиотеки для PDF не загружены. Проверьте подключение скриптов.');
-            return;
-        }
-
-        // Создаём скрытый контейнер
-        const container = document.createElement('div');
-        container.style.cssText = `
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 210mm;
-            padding: 20px;
-            background: white;
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            z-index: -1000;
-            opacity: 0;
-            pointer-events: none;
-        `;
-        document.body.appendChild(container);
-
-        // Собираем HTML
-        let html = `
-            <h1 style="text-align:center; font-size:24px; margin-bottom:5px;">ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ</h1>
-            <p style="text-align:center; font-size:16px; margin-bottom:15px;">по охране труда (строительная компания)</p>
-            <p><strong>Тема:</strong> ${topicLabel}</p>
-            <p><strong>ФИО работника:</strong> ${fio}</p>
-            <p><strong>Должность:</strong> ${position}</p>
-            <p><strong>Дата тестирования:</strong> ${date}</p>
-            <p style="font-size:18px; font-weight:bold; color:${passed ? 'green' : 'red'}; text-align:center; margin:15px 0;">
-                РЕЗУЛЬТАТ: ${correctCount} из ${total} правильных (${percent}%) — ${passed ? 'ЗАЧТЕНО' : 'НЕ ЗАЧТЕНО'}
-            </p>
-            <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                <thead>
-                    <tr style="background-color:#1a3e60; color:white;">
-                        <th style="padding:6px; border:1px solid #ddd; text-align:center;">№</th>
-                        <th style="padding:6px; border:1px solid #ddd; text-align:left;">Вопрос</th>
-                        <th style="padding:6px; border:1px solid #ddd; text-align:left;">Ваш ответ</th>
-                        <th style="padding:6px; border:1px solid #ddd; text-align:left;">Правильный ответ</th>
-                        <th style="padding:6px; border:1px solid #ddd; text-align:center;">Статус</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        results.forEach((r, idx) => {
-            const userText = (r.userIndex !== -1) ? r.options[r.userIndex] : 'Не выбран';
-            const correctText = r.options[r.correctIndex];
-            const status = r.isCorrect ? 'Верно' : 'Неверно';
-            const color = r.isCorrect ? 'green' : 'red';
-            const bg = idx % 2 === 0 ? '#f9f9f9' : 'white';
-            html += `
-                <tr style="background-color:${bg};">
-                    <td style="padding:4px; border:1px solid #ddd; text-align:center;">${idx+1}</td>
-                    <td style="padding:4px; border:1px solid #ddd; text-align:left;">${r.question}</td>
-                    <td style="padding:4px; border:1px solid #ddd; text-align:left;">${userText}</td>
-                    <td style="padding:4px; border:1px solid #ddd; text-align:left;">${correctText}</td>
-                    <td style="padding:4px; border:1px solid #ddd; text-align:center; color:${color}; font-weight:bold;">${status}</td>
-                </tr>
-            `;
-        });
-        html += `
-                </tbody>
-            </table>
-            <p style="margin-top:30px;">Подпись работника: _________________</p>
-            <p>Подпись ответственного лица: _________________</p>
-        `;
-        container.innerHTML = html;
-
-        // Даём время на отрисовку
-        setTimeout(() => {
-            html2canvas(container, {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                width: 210 * 2.83,
-                height: 297 * 2.83
-            }).then(canvas => {
-                const imgData = canvas.toDataURL('image/png');
-                const { jsPDF } = window.jspdf;
-                const pdf = new jsPDF('p', 'mm', 'a4');
-                const pdfWidth = pdf.internal.pageSize.getWidth();
-                const pdfHeight = pdf.internal.pageSize.getHeight();
-                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-                const fileName = `Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`;
-                pdf.save(fileName);
-                document.body.removeChild(container);
-            }).catch(err => {
-                console.error('Ошибка генерации PDF:', err);
-                alert('Не удалось создать PDF. Попробуйте ещё раз.');
-                document.body.removeChild(container);
-            });
-        }, 1000);
-    }
-
-    // -------------------------------------------------------------
-    //  ЗАВЕРШЕНИЕ ТЕСТА
+    //  ЗАВЕРШЕНИЕ ТЕСТА (ВМЕСТО PDF – ПЕЧАТЬ)
     // -------------------------------------------------------------
     function finishTest() {
         if (testFinished) return;
@@ -360,8 +257,8 @@
         });
         resultHtml += `</div>`;
         resultHtml += `<div style="margin-top:15px;">
-            <button class="btn print-btn" onclick="window.print()">🖨️ Печать</button>
-            <span style="margin-left:15px; color:#1a6b3b;">PDF автоматически скачан</span>
+            <button class="btn print-btn" onclick="window.print()">🖨️ Сохранить как PDF</button>
+            <span style="margin-left:15px; color:#1a6b3b;">Нажмите кнопку, затем выберите «Сохранить как PDF» в диалоге печати.</span>
         </div>`;
 
         resultArea.innerHTML = resultHtml;
@@ -370,8 +267,8 @@
         const radios = questionsArea.querySelectorAll('input[type="radio"]');
         radios.forEach(r => r.disabled = true);
 
-        // Генерируем PDF
-        generatePDF(fio, position, topicMeta[currentTopicKey], results, correctCount, total, passed);
+        // Добавляем класс для печати (чтобы скрыть лишнее)
+        document.body.classList.add('print-mode');
     }
 
     // -------------------------------------------------------------
