@@ -4,10 +4,12 @@
     margin: 0;
     padding: 0;
 }
+
 body {
     background: #f4f7fc;
     padding: 20px;
 }
+
 .container {
     max-width: 950px;
     margin: 0 auto;
@@ -16,6 +18,7 @@ body {
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
+
 h1 {
     color: #1a3e60;
     border-bottom: 3px solid #e0e7ef;
@@ -23,6 +26,7 @@ h1 {
     margin-bottom: 20px;
     font-weight: 500;
 }
+
 .controls {
     display: flex;
     flex-wrap: wrap;
@@ -30,10 +34,12 @@ h1 {
     align-items: center;
     margin-bottom: 20px;
 }
+
 .controls label {
     font-weight: 600;
     color: #1a3e60;
 }
+
 .controls select {
     padding: 8px 14px;
     border-radius: 6px;
@@ -42,6 +48,7 @@ h1 {
     font-size: 1rem;
     min-width: 200px;
 }
+
 .btn {
     background: #1a3e60;
     color: white;
@@ -52,28 +59,37 @@ h1 {
     font-size: 1rem;
     transition: background 0.2s;
 }
+
 .btn:hover:not(:disabled) {
     background: #0f2a42;
 }
+
 .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
 }
+
 .btn-secondary {
     background: #6c7a8d;
 }
+
 .btn-secondary:hover:not(:disabled) {
     background: #4e5b6b;
 }
+
 .btn-success {
     background: #2a7d4f;
 }
+
 .btn-success:hover:not(:disabled) {
     background: #1e5f3b;
 }
+
 .hidden {
     display: none !important;
 }
+
+/* Поля ФИО и должность */
 .person-fields {
     display: flex;
     flex-wrap: wrap;
@@ -83,15 +99,18 @@ h1 {
     border-radius: 8px;
     margin-bottom: 20px;
 }
+
 .person-fields div {
     flex: 1 1 200px;
 }
+
 .person-fields label {
     display: block;
     font-weight: 600;
     margin-bottom: 4px;
     color: #1a3e60;
 }
+
 .person-fields input {
     width: 100%;
     padding: 8px 12px;
@@ -99,6 +118,8 @@ h1 {
     border-radius: 6px;
     font-size: 1rem;
 }
+
+/* Блоки вопросов */
 .question-block {
     margin: 16px 0;
     border: 1px solid #dde4ec;
@@ -106,25 +127,31 @@ h1 {
     padding: 16px 20px;
     background: #fafcff;
 }
+
 .question-block p {
     font-weight: 600;
     margin-bottom: 10px;
     font-size: 1.05rem;
 }
+
 .question-block label {
     display: block;
     margin: 6px 0;
     cursor: pointer;
 }
+
 .question-block input[type="radio"] {
     margin-right: 10px;
     transform: scale(1.1);
 }
+
+/* Результаты */
 #resultArea {
     margin-top: 25px;
     border-top: 2px solid #dde4ec;
     padding-top: 20px;
 }
+
 .result-summary {
     background: #e9f3ff;
     padding: 15px 20px;
@@ -132,6 +159,7 @@ h1 {
     font-size: 1.2rem;
     margin-bottom: 20px;
 }
+
 .result-item {
     display: flex;
     align-items: center;
@@ -139,52 +167,93 @@ h1 {
     border-bottom: 1px solid #eaeef4;
     flex-wrap: wrap;
 }
+
 .result-item .q {
     flex: 1 1 200px;
     font-weight: 500;
 }
+
 .result-item .user-answer {
     flex: 0 0 180px;
     color: #2c3e50;
 }
+
 .result-item .correct-answer {
     flex: 0 0 180px;
     color: #1a6b3b;
     font-weight: 500;
 }
+
 .result-item .status {
     flex: 0 0 80px;
     text-align: center;
     font-weight: 600;
 }
+
 .status.correct {
     color: #1e7e34;
 }
+
 .status.wrong {
     color: #b13e3e;
 }
+
 .print-btn {
     margin-top: 15px;
     margin-right: 10px;
 }
+
+/* ---------- СТИЛИ ДЛЯ ПЕЧАТИ ---------- */
 @media print {
-    .controls, .person-fields, .btn, .print-btn, #startBtn, #finishBtn, #resetBtn {
+    /* Скрываем всё лишнее */
+    .controls,
+    .person-fields,
+    #questionsArea,
+    #finishArea,
+    .btn,
+    .print-btn,
+    #startBtn,
+    #finishBtn,
+    #resetBtn,
+    #finishHint {
         display: none !important;
     }
-    .container {
-        box-shadow: none;
-        padding: 10px;
-    }
-    .result-item {
-        break-inside: avoid;
-    }
-}
-/* Добавьте в конец, если нужно скрыть лишнее при печати */
-@media print {
-    .controls, .person-fields, #questionsArea, #finishArea, .btn, .print-btn {
-        display: none !important;
-    }
+
+    /* Показываем только блок результатов */
     #resultArea {
         display: block !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    .result-summary {
+        background: none !important;
+        border: 1px solid #000;
+        padding: 10px;
+        margin-bottom: 15px;
+    }
+
+    .result-item {
+        border-bottom: 1px solid #ccc;
+    }
+
+    .container {
+        box-shadow: none !important;
+        padding: 10px !important;
+        max-width: 100% !important;
+    }
+
+    body {
+        background: white !important;
+        padding: 0 !important;
+    }
+
+    .status.correct {
+        color: green;
+    }
+
+    .status.wrong {
+        color: red;
     }
 }
