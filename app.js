@@ -1,5 +1,5 @@
 // ================================================================
-//  Основное приложение – логика тестирования, генерация PDF
+//  Основное приложение – логика тестирования, генерация PDF через html2canvas + jsPDF
 // ================================================================
 
 (function() {
@@ -194,13 +194,19 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  ГЕНЕРАЦИЯ PDF (html2canvas + jsPDF) – СТАБИЛЬНАЯ ВЕРСИЯ
+    //  ГЕНЕРАЦИЯ PDF (html2canvas + jsPDF) – НЕТ PDFMAKE!
     // -------------------------------------------------------------
     function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
         const date = new Date().toLocaleDateString('ru-RU');
         const percent = Math.round((correctCount / total) * 100);
 
-        // Создаём скрытый контейнер для рендеринга
+        // Проверка наличия библиотек
+        if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+            alert('Библиотеки для PDF не загружены. Проверьте подключение скриптов.');
+            return;
+        }
+
+        // Создаём скрытый контейнер
         const container = document.createElement('div');
         container.style.cssText = `
             position: absolute;
@@ -217,7 +223,7 @@
         `;
         document.body.appendChild(container);
 
-        // Собираем HTML-содержимое
+        // Собираем HTML
         let html = `
             <h1 style="text-align:center; font-size:24px; margin-bottom:5px;">ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ</h1>
             <p style="text-align:center; font-size:16px; margin-bottom:15px;">по охране труда (строительная компания)</p>
