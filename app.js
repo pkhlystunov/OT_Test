@@ -194,62 +194,28 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  ГЕНЕРАЦИЯ PDF С ПОМОЩЬЮ html2pdf.js (ИСПРАВЛЕННАЯ ВЕРСИЯ)
+    //  ГЕНЕРАЦИЯ PDF С ПОМОЩЬЮ html2pdf (используем готовый блок результатов)
     // -------------------------------------------------------------
     function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
         const date = new Date().toLocaleDateString('ru-RU');
         const percent = Math.round((correctCount / total) * 100);
 
-        // Создаём скрытый блок для PDF
-        const pdfContainer = document.createElement('div');
-        pdfContainer.style.cssText = 'visibility: hidden; position: absolute; left: 0; top: 0; width: 210mm; padding: 20px; background: white; font-family: Arial, sans-serif; font-size: 12px; z-index: -1000;';
-        document.body.appendChild(pdfContainer);
-
-        // Формируем содержимое
-        let content = `
-            <h1 style="text-align:center; font-size:24px; margin-bottom:5px;">ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ</h1>
-            <p style="text-align:center; font-size:16px; margin-bottom:15px;">по охране труда (строительная компания)</p>
-            <p><strong>Тема:</strong> ${topicLabel}</p>
-            <p><strong>ФИО работника:</strong> ${fio}</p>
-            <p><strong>Должность:</strong> ${position}</p>
-            <p><strong>Дата тестирования:</strong> ${date}</p>
-            <p style="font-size:18px; font-weight:bold; color:${passed ? 'green' : 'red'}; text-align:center; margin:15px 0;">
-                РЕЗУЛЬТАТ: ${correctCount} из ${total} правильных (${percent}%) — ${passed ? 'ЗАЧТЕНО' : 'НЕ ЗАЧТЕНО'}
-            </p>
-            <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                <thead>
-                    <tr style="background-color:#1a3e60; color:white;">
-                        <th style="padding:6px; border:1px solid #ddd; text-align:center;">№</th>
-                        <th style="padding:6px; border:1px solid #ddd; text-align:left;">Вопрос</th>
-                        <th style="padding:6px; border:1px solid #ddd; text-align:left;">Ваш ответ</th>
-                        <th style="padding:6px; border:1px solid #ddd; text-align:left;">Правильный ответ</th>
-                        <th style="padding:6px; border:1px solid #ddd; text-align:center;">Статус</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        results.forEach((r, idx) => {
-            const userText = (r.userIndex !== -1) ? r.options[r.userIndex] : 'Не выбран';
-            const correctText = r.options[r.correctIndex];
-            const status = r.isCorrect ? 'Верно' : 'Неверно';
-            const color = r.isCorrect ? 'green' : 'red';
-            content += `
-                <tr style="background-color:${idx % 2 === 0 ? '#f9f9f9' : 'white'};">
-                    <td style="padding:4px; border:1px solid #ddd; text-align:center;">${idx+1}</td>
-                    <td style="padding:4px; border:1px solid #ddd; text-align:left;">${r.question}</td>
-                    <td style="padding:4px; border:1px solid #ddd; text-align:left;">${userText}</td>
-                    <td style="padding:4px; border:1px solid #ddd; text-align:left;">${correctText}</td>
-                    <td style="padding:4px; border:1px solid #ddd; text-align:center; color:${color}; font-weight:bold;">${status}</td>
-                </tr>
-            `;
+        // Берём содержимое блока resultArea, но убираем кнопки и лишние элементы
+        let content = resultArea.cloneNode(true);
+        // Удаляем кнопку печати и лишние спаны
+        const buttons = content.querySelectorAll('.print-btn, .btn');
+        buttons.forEach(btn => btn.remove());
+        // Убираем сообщение о скачивании PDF
+        const spans = content.querySelectorAll('span');
+        spans.forEach(span => {
+            if (span.textContent.includes('PDF')) span.remove();
         });
-        content += `
-                </tbody>
-            </table>
-            <p style="margin-top:30px;">Подпись работника: _________________</p>
-            <p>Подпись ответственного лица: _________________</p>
-        `;
-        pdfContainer.innerHTML = content;
+
+        // Создаём временный контейнер для PDF
+        const pdfContainer = document.createElement('div');
+        pdfContainer.style.cssText = 'position: absolute; left: 0; top: 0; width: 210mm; padding: 20px; background: white; font-family: Arial, sans-serif; font-size: 12px; z-index: 10000;';
+        pdfContainer.appendChild(content);
+        document.body.appendChild(pdfContainer);
 
         // Даём браузеру время на отрисовку
         setTimeout(() => {
