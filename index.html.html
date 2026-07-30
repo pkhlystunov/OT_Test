@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Тестирование по охране труда (строительство)</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- pdfmake для генерации PDF с кириллицей -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.min.js"></script>
+</head>
+<body>
+<div class="container" id="app">
+    <h1>🧰 Охрана труда — тестирование</h1>
+    <div class="controls">
+        <label for="topicSelect">Выберите тему:</label>
+        <select id="topicSelect"></select>
+        <button class="btn" id="startBtn">▶ Начать тест</button>
+        <button class="btn btn-secondary" id="resetBtn">↺ Сбросить</button>
+    </div>
+    <div id="personFields" class="person-fields hidden">
+        <div><label for="fioInput">ФИО работника</label><input type="text" id="fioInput" placeholder="Иванов Иван Иванович"></div>
+        <div><label for="positionInput">Должность</label><input type="text" id="positionInput" placeholder="Мастер строительных работ"></div>
+    </div>
+    <div id="questionsArea" class="hidden"></div>
+    <div id="finishArea" class="hidden">
+        <button class="btn btn-success" id="finishBtn" disabled>✔ Завершить тест</button>
+        <span id="finishHint" style="font-size:0.9rem; color:#b13e3e; margin-left:12px;"></span>
+    </div>
+    <div id="resultArea" class="hidden"></div>
+</div>
+<script src="questions.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
