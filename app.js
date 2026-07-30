@@ -258,7 +258,6 @@
         resultHtml += `</div>`;
         resultHtml += `<div style="margin-top:15px;">
             <button class="btn print-btn" onclick="window.print()">🖨️ Сохранить как PDF</button>
-            <span style="margin-left:15px; color:#1a6b3b;">Нажмите кнопку, затем выберите «Сохранить как PDF» в диалоге печати.</span>
         </div>`;
 
         resultArea.innerHTML = resultHtml;
