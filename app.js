@@ -1,5 +1,5 @@
 // ================================================================
-//  Основное приложение – логика тестирования, автоматическая генерация PDF
+//  Основное приложение – логика тестирования, PDF через html2pdf
 // ================================================================
 
 (function() {
@@ -197,15 +197,16 @@
     //  ГЕНЕРАЦИЯ PDF ЧЕРЕЗ html2pdf (АВТОМАТИЧЕСКИ)
     // -------------------------------------------------------------
     function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
+        // Проверка загрузки html2pdf
         if (typeof html2pdf === 'undefined') {
-            alert('Библиотека html2pdf не загружена. Проверьте подключение скриптов.');
+            alert('Библиотека html2pdf не загружена. Проверьте подключение скриптов или повторите попытку позже.');
             return;
         }
 
         const date = new Date().toLocaleDateString('ru-RU');
         const percent = Math.round((correctCount / total) * 100);
 
-        // Скрытый контейнер
+        // Скрытый контейнер для рендеринга
         const container = document.createElement('div');
         container.style.cssText = `
             position: absolute;
@@ -219,7 +220,7 @@
         `;
         document.body.appendChild(container);
 
-        // Формируем содержимое
+        // Формируем HTML-содержимое
         let html = `
             <h1 style="text-align:center; font-size:24px; margin-bottom:5px;">ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ</h1>
             <p style="text-align:center; font-size:16px; margin-bottom:15px;">по охране труда (строительная компания)</p>
@@ -266,7 +267,7 @@
         `;
         container.innerHTML = html;
 
-        // Ждём отрисовки, затем генерируем PDF
+        // Даём время на отрисовку
         setTimeout(() => {
             const opt = {
                 margin:        [10, 10, 10, 10],
@@ -283,7 +284,7 @@
                 alert('Не удалось создать PDF. Попробуйте ещё раз.');
                 document.body.removeChild(container);
             });
-        }, 1500); // задержка для полной отрисовки
+        }, 1500);
     }
 
     // -------------------------------------------------------------
@@ -360,7 +361,7 @@
         const radios = questionsArea.querySelectorAll('input[type="radio"]');
         radios.forEach(r => r.disabled = true);
 
-        // Автоматическая генерация PDF
+        // Автоматическая генерация PDF через html2pdf
         generatePDF(fio, position, topicMeta[currentTopicKey], results, correctCount, total, passed);
     }
 
