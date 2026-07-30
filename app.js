@@ -194,22 +194,15 @@
     positionInput.addEventListener('input', checkCompletion);
 
     // -------------------------------------------------------------
-    //  ГЕНЕРАЦИЯ PDF С ПОМОЩЬЮ html2pdf.js
+    //  ГЕНЕРАЦИЯ PDF С ПОМОЩЬЮ html2pdf.js (ИСПРАВЛЕННАЯ ВЕРСИЯ)
     // -------------------------------------------------------------
     function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
         const date = new Date().toLocaleDateString('ru-RU');
         const percent = Math.round((correctCount / total) * 100);
 
-        // Создаём временный скрытый блок для PDF
+        // Создаём скрытый блок для PDF
         const pdfContainer = document.createElement('div');
-        pdfContainer.style.position = 'absolute';
-        pdfContainer.style.left = '-9999px';
-        pdfContainer.style.top = '0';
-        pdfContainer.style.width = '210mm';
-        pdfContainer.style.padding = '20px';
-        pdfContainer.style.fontFamily = 'Arial, sans-serif';
-        pdfContainer.style.backgroundColor = 'white';
-        pdfContainer.style.fontSize = '12px';
+        pdfContainer.style.cssText = 'visibility: hidden; position: absolute; left: 0; top: 0; width: 210mm; padding: 20px; background: white; font-family: Arial, sans-serif; font-size: 12px; z-index: -1000;';
         document.body.appendChild(pdfContainer);
 
         // Формируем содержимое
@@ -258,23 +251,24 @@
         `;
         pdfContainer.innerHTML = content;
 
-        // Настройки для html2pdf
-        const opt = {
-            margin:        [10, 10, 10, 10],
-            filename:     `Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`,
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
+        // Даём браузеру время на отрисовку
+        setTimeout(() => {
+            const opt = {
+                margin:        [10, 10, 10, 10],
+                filename:     `Тестирование_${topicLabel.replace(/[^a-zA-Zа-яА-Я0-9]/g, '_')}_${date.replace(/\./g, '-')}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
 
-        // Генерируем и скачиваем PDF
-        html2pdf().set(opt).from(pdfContainer).save().then(() => {
-            document.body.removeChild(pdfContainer);
-        }).catch(err => {
-            console.error('Ошибка генерации PDF:', err);
-            alert('Не удалось создать PDF. Проверьте консоль для деталей.');
-            document.body.removeChild(pdfContainer);
-        });
+            html2pdf().set(opt).from(pdfContainer).save().then(() => {
+                document.body.removeChild(pdfContainer);
+            }).catch(err => {
+                console.error('Ошибка генерации PDF:', err);
+                alert('Не удалось создать PDF. Проверьте консоль для деталей.');
+                document.body.removeChild(pdfContainer);
+            });
+        }, 500);
     }
 
     // -------------------------------------------------------------
