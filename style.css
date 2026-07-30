@@ -1,4 +1,4 @@
-/* Стили для печати – скрываем всё, кроме результатов */
+/* Стили для печати – скрываем всё, кроме результата */
 @media print {
     .controls, .person-fields, #questionsArea, #finishArea, .btn, .print-btn, #startBtn, #finishBtn, #resetBtn {
         display: none !important;
