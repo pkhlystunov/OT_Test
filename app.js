@@ -1,5 +1,5 @@
 // ================================================================
-//  Основное приложение – логика тестирования, PDF через html2pdf
+//  Основное приложение – логика тестирования, PDF через html2canvas + jsPDF
 // ================================================================
 
 (function() {
@@ -193,43 +193,36 @@
     fioInput.addEventListener('input', checkCompletion);
     positionInput.addEventListener('input', checkCompletion);
 
-      // -------------------------------------------------------------
-    //  ГЕНЕРАЦИЯ PDF ЧЕРЕЗ html2canvas + jsPDF (вместо html2pdf)
+    // -------------------------------------------------------------
+    //  ГЕНЕРАЦИЯ PDF ЧЕРЕЗ html2canvas + jsPDF (ГАРАНТИРОВАННО)
     // -------------------------------------------------------------
     function generatePDF(fio, position, topicLabel, results, correctCount, total, passed) {
-        // Проверка загрузки библиотек
         if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
-            // подгружаем jsPDF, если не загружен
-            if (typeof window.jspdf === 'undefined') {
-                const script = document.createElement('script');
-                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
-                document.head.appendChild(script);
-            }
-            alert('Библиотеки для PDF не загружены. Попробуйте ещё раз.');
+            alert('Библиотеки для PDF не загружены. Проверьте подключение скриптов.');
             return;
         }
 
         const date = new Date().toLocaleDateString('ru-RU');
         const percent = Math.round((correctCount / total) * 100);
 
-        // Создаём контейнер, который будет видим, но прозрачен (чтобы html2canvas мог захватить)
+        // Создаём временный контейнер (видимый, но с opacity:0 – html2canvas захватывает его)
         const container = document.createElement('div');
         container.style.cssText = `
             position: absolute;
-            top: 0;
             left: 0;
+            top: 0;
             width: 210mm;
             padding: 20px;
             background: white;
             font-family: Arial, sans-serif;
             font-size: 12px;
+            z-index: 9999;
             opacity: 0;
             pointer-events: none;
-            z-index: -1000;
         `;
         document.body.appendChild(container);
 
-        // Формируем HTML-содержимое
+        // Формируем содержимое
         let html = `
             <h1 style="text-align:center; font-size:24px; margin-bottom:5px;">ЛИСТ ПРОХОЖДЕНИЯ ТЕСТИРОВАНИЯ</h1>
             <p style="text-align:center; font-size:16px; margin-bottom:15px;">по охране труда (строительная компания)</p>
@@ -276,15 +269,14 @@
         `;
         container.innerHTML = html;
 
-        // Даём время на отрисовку
+        // Даём время на отрисовку (важно!)
         setTimeout(() => {
-            // Используем html2canvas для захвата контейнера
             html2canvas(container, {
                 scale: 2,
                 useCORS: true,
-                letterRendering: true,
-                width: container.scrollWidth,
-                height: container.scrollHeight
+                logging: false,
+                width: 210 * 2.83, // ~595px
+                height: 297 * 2.83  // ~842px
             }).then(canvas => {
                 const imgData = canvas.toDataURL('image/png');
                 const { jsPDF } = window.jspdf;
@@ -296,11 +288,11 @@
                 pdf.save(fileName);
                 document.body.removeChild(container);
             }).catch(err => {
-                console.error('Ошибка захвата:', err);
+                console.error('Ошибка генерации PDF:', err);
                 alert('Не удалось создать PDF. Попробуйте ещё раз.');
                 document.body.removeChild(container);
             });
-        }, 1000);
+        }, 2000); // задержка 2 секунды
     }
 
     // -------------------------------------------------------------
@@ -377,7 +369,7 @@
         const radios = questionsArea.querySelectorAll('input[type="radio"]');
         radios.forEach(r => r.disabled = true);
 
-        // Автоматическая генерация PDF через html2pdf
+        // Генерируем PDF
         generatePDF(fio, position, topicMeta[currentTopicKey], results, correctCount, total, passed);
     }
 
